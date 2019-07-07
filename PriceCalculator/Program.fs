@@ -12,14 +12,16 @@ module Main =
         }
 
         let taxRate = 20
+        let discountRate = 15
         
-        let finalPrice = PriceCalculator.calculatePrice taxRate product
+        let price = PriceCalculator.calculatePrice taxRate discountRate product
 
-        sprintf "Product price reported as $%M before tax and $%M after %d%% tax." 
-            product.Price finalPrice taxRate
+        printfn "Tax=%d%%, discount=%d%%" taxRate discountRate
+        printfn "Tax amount = $%M; Discount amount = $%M" price.TaxAmount price.DiscountAmount
+        printfn "Price before = $%M, price after = $%M" price.BaseAmount price.FinalAmount
 
     [<EntryPoint>]
     let main argv = 
-        printfn "%s" test
+        test
         Console.ReadKey() |> ignore
         0
