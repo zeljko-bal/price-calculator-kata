@@ -16,9 +16,7 @@ module Main =
         
         let price = PriceCalculator.calculatePrice taxRate discountRate product
 
-        printfn "Tax=%d%%, discount=%d%%" taxRate discountRate
-        printfn "Tax amount = $%M; Discount amount = $%M" price.TaxAmount price.DiscountAmount
-        printfn "Price before = $%M, price after = $%M" price.BaseAmount price.FinalAmount
+        PriceReportGenerator.generatePriceReport price |> printf "%s"
 
     [<EntryPoint>]
     let main argv = 

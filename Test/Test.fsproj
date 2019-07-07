@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="PriceReportGeneratorTests.fs" />
     <Compile Include="PriceCalculatorTests.fs" />
   </ItemGroup>
 

@@ -1,11 +1,5 @@
 ﻿namespace PriceCalculator
 
-type Product = { 
-    Name : string
-    UPC : int
-    Price : decimal 
-}
-
 type CalculatedPrice = {
     BaseAmount : decimal
     TaxAmount : decimal
@@ -35,3 +29,4 @@ module PriceCalculator =
             DiscountAmount = discountAmount
             FinalAmount = finalAmount
         }
+
