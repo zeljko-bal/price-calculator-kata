@@ -11,9 +11,9 @@ module PriceReportGenerator =
 
     let generatePriceReport price = 
         [
-            sprintf "Tax amount = $%M" price.TaxAmount |> someWhenGreaterThan0 price.TaxAmount;
-            sprintf "Discount amount = $%M" price.DiscountAmount |> someWhenGreaterThan0 price.DiscountAmount;
-            sprintf "Price before = $%M, price after = $%M" price.BaseAmount price.FinalAmount |> Some;
+            sprintf "Tax amount = $%M" price.TaxAmount |> someWhenGreaterThan0 price.TaxAmount
+            sprintf "Discount amount = $%M" price.DiscountAmount |> someWhenGreaterThan0 price.DiscountAmount
+            sprintf "Price before = $%M, price after = $%M" price.BaseAmount price.FinalAmount |> Some
         ]
             |> listFilterSome
             |> String.concat Environment.NewLine

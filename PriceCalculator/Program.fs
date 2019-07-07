@@ -12,9 +12,8 @@ module Main =
         }
 
         let taxRate = 20
-        let discountRate = 15
         
-        let price = PriceCalculator.calculatePrice taxRate discountRate product
+        let price = PriceCalculator.calculatePrice taxRate [UniversalDiscount { Rate = 15 }] product
 
         PriceReportGenerator.generatePriceReport price |> printf "%s"
 

@@ -16,7 +16,7 @@ type PriceReportGeneratorTests () =
 
     [<TestMethod>]
     member this.``generatePriceReport, when given tax rate, generates a correct report`` () =
-        let price = PriceCalculator.calculatePrice 20 0 product
+        let price = PriceCalculator.calculatePrice 20 [] product
         let report = PriceReportGenerator.generatePriceReport price
         Assert.AreEqual("Tax amount = $4.05" + Environment.NewLine + 
             "Price before = $20.25, price after = $24.30", 
@@ -24,7 +24,7 @@ type PriceReportGeneratorTests () =
 
     [<TestMethod>]
     member this.``generatePriceReport, when given tax rate and discount rate, generates a correct report`` () =
-        let price = PriceCalculator.calculatePrice 20 15 product
+        let price = PriceCalculator.calculatePrice 20 [UniversalDiscount {Rate = 15}] product
         let report = PriceReportGenerator.generatePriceReport price
         Assert.AreEqual("Tax amount = $4.05" + Environment.NewLine + 
             "Discount amount = $3.04"+ Environment.NewLine + 
