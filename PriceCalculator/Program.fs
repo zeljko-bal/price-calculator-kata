@@ -1,6 +1,9 @@
 ﻿namespace PriceCalculator
 
 open System
+open PriceDefinition
+open PriceCalculation
+open Model
 
 module Main = 
 
@@ -10,10 +13,13 @@ module Main =
             UPC = 12345
             Price = 20.25m
         }
-
-        let taxRate = 20
-        
-        let price = PriceCalculator.calculatePrice taxRate [UniversalDiscount { Rate = 15 }] product
+             
+        let price = 
+            definePrice
+            |> withDiscountsBeforeTax [UPCDiscount {Rate = 7; UPC = 12345}]
+            |> withTax 20
+            |> withDiscountsAfterTax [UniversalDiscount {Rate = 15}]
+            |> calculatePriceForProduct product
 
         PriceReportGenerator.generatePriceReport price |> printf "%s"
 

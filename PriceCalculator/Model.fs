@@ -1,7 +1,9 @@
 ﻿namespace PriceCalculator
 
-type Product = { 
-    Name : string
-    UPC : int
-    Price : decimal 
-}
+module Model = 
+
+    type Product = { 
+        Name : string
+        UPC : int
+        Price : decimal 
+    }

@@ -50,6 +50,7 @@
     <None Include="App.config" />
     <Content Include="packages.config" />
     <Compile Include="Model.fs" />
+    <Compile Include="PriceDefinition.fs" />
     <Compile Include="PriceCalculator.fs" />
     <Compile Include="PriceReportGenerator.fs" />
     <Compile Include="Program.fs" />

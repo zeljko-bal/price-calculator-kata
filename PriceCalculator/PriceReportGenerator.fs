@@ -1,6 +1,7 @@
 ﻿namespace PriceCalculator
 
 open System
+open PriceCalculation
 
 module PriceReportGenerator = 
     let private listFilterSome = 
