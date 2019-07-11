@@ -4,10 +4,16 @@ module PriceCalculation =
     open PriceDefinition
     open Model
 
+    type CalculatedExpense = {
+        Name : string
+        Amount : decimal
+    }
+
     type CalculatedPrice = {
         BaseAmount : decimal
         TaxAmount : decimal
         DiscountAmount : decimal
+        Expenses : CalculatedExpense seq
         FinalAmount : decimal
     }
 
@@ -33,13 +39,36 @@ module PriceCalculation =
 
     let private calculateDiscountAmount discount product basePrice = 
         match discount with
-            | UniversalDiscount discount -> calculateUniversalDiscountAmount discount basePrice
-            | UPCDiscount discount -> calculateUPCDiscountAmount discount product basePrice
+        | UniversalDiscount discount -> calculateUniversalDiscountAmount discount basePrice
+        | UPCDiscount discount -> calculateUPCDiscountAmount discount product basePrice
     
     let private calculateDiscountsAmount discounts product basePrice = 
         discounts
-        |> List.map (fun discount -> calculateDiscountAmount discount product basePrice)
-        |> List.sum
+        |> Seq.map (fun discount -> calculateDiscountAmount discount product basePrice)
+        |> Seq.sum
+        |> roundTo2decimals
+
+    let calculateExpenseAmount expense product = 
+        match expense with
+        | PercentageExpense expense -> calculatePercentage expense.Percentage product.Price
+        | AbsoluteExpense expense -> expense.Amount
+        |> roundTo2decimals
+
+    let extractExpenseName expense = 
+        match expense with
+        | PercentageExpense expense -> expense.Name
+        | AbsoluteExpense expense -> expense.Name
+
+    let calculateExpenses (expenses: Expense seq) product = 
+        expenses
+        |> Seq.map (fun expense -> { 
+            Name = extractExpenseName expense
+            Amount = calculateExpenseAmount expense product
+        })
+
+    let calculateExpensesAmount calculatedExpenses = 
+        calculatedExpenses
+        |> Seq.sumBy (fun expense -> expense.Amount)
         |> roundTo2decimals
 
     let calculatePrice priceDefinition product = 
@@ -48,12 +77,15 @@ module PriceCalculation =
         let taxAmount = calculateTaxAmount priceDefinition.TaxRate priceAmountBeforeTax
         let discountAmountAfterTax = calculateDiscountsAmount priceDefinition.Discounts.AfterTax product priceAmountBeforeTax
         let discountAmount = discountAmountBeforeTax + discountAmountAfterTax
-        let finalAmount = product.Price + taxAmount - discountAmount
+        let calculatedExpenses = calculateExpenses priceDefinition.Expenses product
+        let expensesAmount = calculateExpensesAmount calculatedExpenses
+        let finalAmount = product.Price + taxAmount - discountAmount + expensesAmount
 
         {
             BaseAmount = product.Price
             TaxAmount = taxAmount
             DiscountAmount = discountAmount
+            Expenses = calculatedExpenses
             FinalAmount = finalAmount
         }
 
