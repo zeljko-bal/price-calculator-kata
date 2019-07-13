@@ -6,35 +6,35 @@ module PriceCalculation =
 
     type CalculatedExpense = {
         Name : string
-        Amount : decimal
+        Amount : Money
     }
 
     type CalculatedPrice = {
-        BaseAmount : decimal
-        TaxAmount : decimal
-        DiscountAmount : decimal
+        BaseAmount : Money
+        TaxAmount : Money
+        DiscountAmount : Money
         Expenses : CalculatedExpense seq
-        FinalAmount : decimal
+        FinalAmount : Money
     }
 
-    let private calculatePercentage (percentage: int) wholeAmount = 
+    let private calculatePercentage (percentage: int) (wholeAmount: Money) = 
         wholeAmount * decimal percentage / 100m
         
-    let private roundTo2decimals (value: decimal) = 
-        System.Math.Round (value, 2)
+    let private roundTo2decimals (value: Money) = 
+        value.round 2
 
     let private calculateTaxAmount rate basePrice = 
         calculatePercentage rate basePrice
         |> roundTo2decimals
 
-    let private calculateUniversalDiscountAmount (discount: UniversalDiscount) (basePrice: decimal) = 
+    let private calculateUniversalDiscountAmount (discount: UniversalDiscount) (basePrice: Money) = 
         calculatePercentage discount.Rate basePrice
         |> roundTo2decimals
 
-    let private calculateUPCDiscountAmount (discount: UPCDiscount) (product: Product) (basePrice: decimal) = 
+    let private calculateUPCDiscountAmount (discount: UPCDiscount) (product: Product) (basePrice: Money) = 
         match discount.UPC with
         | upc when upc = product.UPC -> calculatePercentage discount.Rate basePrice
-        | _ -> 0m
+        | _ -> basePrice.ZeroOfSameCurrency
         |> roundTo2decimals
 
     let rec private calculateDiscountAmount discount product basePrice = 
@@ -43,12 +43,14 @@ module PriceCalculation =
         | UPCDiscount discount -> calculateUPCDiscountAmount discount product basePrice
         | AdditiveDiscounts discounts -> calculateAdditiveDiscountsAmount discounts product basePrice
         | MultiplicativeDiscounts discounts -> calculateMultiplicativeDiscountsAmount discounts product basePrice
-        | NoDiscount -> 0m
+        | NoDiscount -> basePrice.ZeroOfSameCurrency
 
     and private calculateAdditiveDiscountsAmount discounts product basePrice = 
+        let combineAdditiveDiscounts currentDiscountAmount discount =
+            currentDiscountAmount + calculateDiscountAmount discount product basePrice
+        
         discounts
-        |> Seq.map (fun discount -> calculateDiscountAmount discount product basePrice)
-        |> Seq.sum
+        |> Seq.fold combineAdditiveDiscounts basePrice.ZeroOfSameCurrency
         |> roundTo2decimals
 
     and private calculateMultiplicativeDiscountsAmount discounts product basePrice = 
@@ -56,7 +58,7 @@ module PriceCalculation =
             currentDiscountAmount + calculateDiscountAmount discount product (basePrice - currentDiscountAmount)
 
         discounts
-        |> Seq.fold combineMultiplicativeDiscounts 0m
+        |> Seq.fold combineMultiplicativeDiscounts basePrice.ZeroOfSameCurrency
         |> roundTo2decimals
 
     let calculateExpenseAmount expense product = 
@@ -77,10 +79,12 @@ module PriceCalculation =
             Amount = calculateExpenseAmount expense product
         })
 
-    let calculateExpensesAmount calculatedExpenses = 
-        calculatedExpenses
-        |> Seq.sumBy (fun expense -> expense.Amount)
-        |> roundTo2decimals
+    let calculateExpensesAmount (calculatedExpenses: CalculatedExpense seq) = 
+        if Seq.isEmpty calculatedExpenses then None
+        else Some (calculatedExpenses
+            |> Seq.map (fun expense -> expense.Amount)
+            |> Seq.reduce (+)
+            |> roundTo2decimals)
 
     let applyDiscountCap cap product discountAmount = 
         let cappedAmount = 
@@ -98,7 +102,9 @@ module PriceCalculation =
         let discountAmount = discountAmountBeforeTax + discountAmountAfterTax
         let cappedDiscountAmount = applyDiscountCap priceDefinition.Discounts.Cap product discountAmount
         let calculatedExpenses = calculateExpenses priceDefinition.Expenses product
-        let expensesAmount = calculateExpensesAmount calculatedExpenses
+        let expensesAmount = 
+            calculateExpensesAmount calculatedExpenses 
+            |> Option.defaultValue product.Price.ZeroOfSameCurrency
         let finalAmount = product.Price + taxAmount - cappedDiscountAmount + expensesAmount
 
         {

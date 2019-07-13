@@ -11,9 +11,9 @@ module Main =
         let product = { 
             Name = "The Little Prince"
             UPC = 12345
-            Price = 20.25m
+            Price = Money.Of 20.25m "$"
         }
-             
+        
         let price = 
             definePrice
             |> withDiscountsBeforeTax (AdditiveDiscounts 

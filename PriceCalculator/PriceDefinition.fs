@@ -1,5 +1,7 @@
 ﻿namespace PriceCalculator
 
+open Model
+
 module PriceDefinition = 
 
     type UniversalDiscount = {
@@ -20,7 +22,7 @@ module PriceDefinition =
 
     type DiscountCap = 
         | Percentage of int
-        | Absolute of decimal
+        | Absolute of Money
         | Unbound
 
     type Discounts = {
@@ -31,7 +33,7 @@ module PriceDefinition =
 
     type AbsoluteExpense = {
         Name : string
-        Amount : decimal
+        Amount : Money
     }
 
     type PercentageExpense = {
