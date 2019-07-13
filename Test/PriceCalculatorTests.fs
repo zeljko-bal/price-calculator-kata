@@ -4,6 +4,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 open PriceCalculator.PriceCalculation
 open PriceCalculator.PriceDefinition
 open PriceCalculator.Model
+open TestUtils
 open System
 
 [<TestClass>]
@@ -14,12 +15,6 @@ type PriceCalculatorTests () =
         UPC = 12345
         Price = Money.Of 20.25m "USD"
     }
-
-    let toMoneyOfCurrency currency amount = 
-        Money.Of (decimal amount) currency
-
-    let toMoney amount = 
-        toMoneyOfCurrency "USD" amount 
 
     [<DataRow(20, 24.30)>]
     [<DataRow(21, 24.50)>]
@@ -172,3 +167,18 @@ type PriceCalculatorTests () =
 
         Assert.ThrowsException<InvalidOperationException>(fun () -> product |> calculate1 |> ignore) |> ignore
         Assert.ThrowsException<InvalidOperationException>(fun () -> product |> calculate2 |> ignore) |> ignore
+
+    [<TestMethod>]
+    member this.``calculatePrice, when given higher precision, calculates correct price`` () =
+        let price = 
+            definePrice
+            |> withPrecision 4
+            |> withTax 21
+            |> withDiscountsAfterTax (MultiplicativeDiscounts [
+                UniversalDiscount {Rate = 15} 
+                UPCDiscount {Rate = 7; UPC = 12345} ])
+            |> withExpenses [PercentageExpense {Name = "Transport"; Percentage = 3}]
+            |> calculatePriceForProduct product
+        Assert.AreEqual(4.2525 |> toMoney, price.TaxAmount)
+        Assert.AreEqual(4.2424 |> toMoney, price.DiscountAmount)
+        Assert.AreEqual(20.8676 |> toMoney, price.FinalAmount)

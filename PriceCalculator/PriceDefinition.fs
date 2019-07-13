@@ -46,12 +46,14 @@ module PriceDefinition =
         | PercentageExpense of PercentageExpense
 
     type PriceDefinition = {
+        Precision : int
         TaxRate : int
         Discounts : Discounts
         Expenses : Expense seq
     }
 
     let definePrice = { 
+        Precision = 2
         TaxRate = 0
         Discounts = { 
             BeforeTax = NoDiscount
@@ -60,6 +62,9 @@ module PriceDefinition =
         }
         Expenses = []
     }
+
+    let withPrecision precision priceDefinition  =  
+        { priceDefinition with Precision = precision }
     
     let withTax taxRate priceDefinition = 
         { priceDefinition with TaxRate = taxRate }

@@ -23,7 +23,7 @@ module Main =
                 [UniversalDiscount {Rate = 15}])
             |> calculatePriceForProduct product
 
-        PriceReportGenerator.generatePriceReport price |> printf "%s"
+        PriceReportGenerator.generatePriceReport 2 price |> printf "%s"
 
     [<EntryPoint>]
     let main argv = 
