@@ -14,10 +14,19 @@ module PriceDefinition =
     type Discount = 
         | UniversalDiscount of UniversalDiscount
         | UPCDiscount of UPCDiscount
+        | AdditiveDiscounts of Discount seq
+        | MultiplicativeDiscounts of Discount seq
+        | NoDiscount
+
+    type DiscountCap = 
+        | Percentage of int
+        | Absolute of decimal
+        | Unbound
 
     type Discounts = {
-        BeforeTax : Discount seq
-        AfterTax : Discount seq
+        BeforeTax : Discount
+        AfterTax : Discount
+        Cap : DiscountCap
     }
 
     type AbsoluteExpense = {
@@ -43,12 +52,13 @@ module PriceDefinition =
     let definePrice = { 
         TaxRate = 0
         Discounts = { 
-            BeforeTax = []
-            AfterTax = [] 
+            BeforeTax = NoDiscount
+            AfterTax = NoDiscount
+            Cap = Unbound
         }
         Expenses = []
     }
-
+    
     let withTax taxRate priceDefinition = 
         { priceDefinition with TaxRate = taxRate }
 
@@ -60,3 +70,6 @@ module PriceDefinition =
 
     let withExpenses expenses priceDefinition = 
         { priceDefinition with Expenses = expenses }
+
+    let withDisountCap cap priceDefinition = 
+        { priceDefinition with Discounts = { priceDefinition.Discounts with Cap = cap } }

@@ -16,9 +16,11 @@ module Main =
              
         let price = 
             definePrice
-            |> withDiscountsBeforeTax [UPCDiscount {Rate = 7; UPC = 12345}]
+            |> withDiscountsBeforeTax (AdditiveDiscounts 
+                [UPCDiscount {Rate = 7; UPC = 12345}])
             |> withTax 20
-            |> withDiscountsAfterTax [UniversalDiscount {Rate = 15}]
+            |> withDiscountsAfterTax (AdditiveDiscounts 
+                [UniversalDiscount {Rate = 15}])
             |> calculatePriceForProduct product
 
         PriceReportGenerator.generatePriceReport price |> printf "%s"

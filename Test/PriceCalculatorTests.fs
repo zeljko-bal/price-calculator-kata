@@ -34,7 +34,8 @@ type PriceCalculatorTests () =
         let price = 
             definePrice
             |> withTax taxRate
-            |> withDiscountsAfterTax [UniversalDiscount {Rate = discountRate}]
+            |> withDiscountsAfterTax (AdditiveDiscounts 
+                [UniversalDiscount {Rate = discountRate}])
             |> calculatePriceForProduct product
         Assert.AreEqual(decimal expectedFinalPrice, price.FinalAmount)
         
@@ -47,9 +48,9 @@ type PriceCalculatorTests () =
         let price = 
             definePrice
             |> withTax taxRate
-            |> withDiscountsAfterTax [
+            |> withDiscountsAfterTax (AdditiveDiscounts [
                 UniversalDiscount {Rate = unDiscountRate} 
-                UPCDiscount {Rate = upcDiscountRate; UPC = upc} ]
+                UPCDiscount {Rate = upcDiscountRate; UPC = upc} ])
             |> calculatePriceForProduct product
         Assert.AreEqual(decimal taxAmount, price.TaxAmount)
         Assert.AreEqual(decimal discountAmount, price.DiscountAmount)
@@ -62,9 +63,11 @@ type PriceCalculatorTests () =
         
         let price = 
             definePrice
-            |> withDiscountsBeforeTax [UPCDiscount {Rate = upcDiscountRate; UPC = upc}]
+            |> withDiscountsBeforeTax (AdditiveDiscounts 
+                [UPCDiscount {Rate = upcDiscountRate; UPC = upc}])
             |> withTax taxRate
-            |> withDiscountsAfterTax [UniversalDiscount {Rate = unDiscountRate}]
+            |> withDiscountsAfterTax (AdditiveDiscounts 
+                [UniversalDiscount {Rate = unDiscountRate}])
             |> calculatePriceForProduct product
         Assert.AreEqual(decimal taxAmount, price.TaxAmount)
         Assert.AreEqual(decimal discountAmount, price.DiscountAmount)
@@ -78,12 +81,66 @@ type PriceCalculatorTests () =
         let price = 
             definePrice
             |> withTax taxRate
-            |> withDiscountsAfterTax [
+            |> withDiscountsAfterTax (AdditiveDiscounts [
                 UniversalDiscount {Rate = unDiscountRate} 
-                UPCDiscount {Rate = upcDiscountRate; UPC = upc} ]
+                UPCDiscount {Rate = upcDiscountRate; UPC = upc} ])
             |> withExpenses [
                 PercentageExpense {Name = "Packaging"; Percentage = 1}
                 AbsoluteExpense {Name = "Transport"; Amount = 2.2m} ]
+            |> calculatePriceForProduct product
+        Assert.AreEqual(decimal taxAmount, price.TaxAmount)
+        Assert.AreEqual(decimal discountAmount, price.DiscountAmount)
+        Assert.AreEqual(decimal expectedFinalPrice, price.FinalAmount)
+        
+    [<DataRow(21, 15, 7, 12345, 4.25, 4.24, 22.66)>]
+    [<DataTestMethod>]
+    member this.``calculatePrice, when given tax rate and universal discount and upc discount as multiplicative and expenses, calculates correct price`` 
+        (taxRate: int) (unDiscountRate: int) (upcDiscountRate: int) (upc: int) (taxAmount: double) (discountAmount: double) (expectedFinalPrice: double) =
+        
+        let price = 
+            definePrice
+            |> withTax taxRate
+            |> withDiscountsAfterTax (MultiplicativeDiscounts [
+                UniversalDiscount {Rate = unDiscountRate} 
+                UPCDiscount {Rate = upcDiscountRate; UPC = upc} ])
+            |> withExpenses [
+                PercentageExpense {Name = "Packaging"; Percentage = 1}
+                AbsoluteExpense {Name = "Transport"; Amount = 2.2m} ]
+            |> calculatePriceForProduct product
+        Assert.AreEqual(decimal taxAmount, price.TaxAmount)
+        Assert.AreEqual(decimal discountAmount, price.DiscountAmount)
+        Assert.AreEqual(decimal expectedFinalPrice, price.FinalAmount)
+
+    [<DataRow(21, 15, 7, 12345, 4.00, 4.25, 4.00, 20.50)>]
+    [<DataTestMethod>]
+    member this.``calculatePrice, when given tax rate and universal discount and upc discount and absolute cap, calculates correct price`` 
+        (taxRate: int) (unDiscountRate: int) (upcDiscountRate: int) (upc: int) (cap: double) (taxAmount: double) (discountAmount: double) (expectedFinalPrice: double) =
+    
+        let price = 
+            definePrice
+            |> withTax taxRate
+            |> withDiscountsAfterTax (AdditiveDiscounts [
+                UniversalDiscount {Rate = unDiscountRate}
+                UPCDiscount {Rate = upcDiscountRate; UPC = upc}])
+            |> withDisountCap (Absolute (decimal cap))
+            |> calculatePriceForProduct product
+        Assert.AreEqual(decimal taxAmount, price.TaxAmount)
+        Assert.AreEqual(decimal discountAmount, price.DiscountAmount)
+        Assert.AreEqual(decimal expectedFinalPrice, price.FinalAmount)
+
+    [<DataRow(21, 15, 7, 12345, 20, 4.25, 4.05, 20.45)>]
+    [<DataRow(21, 15, 7, 12345, 30, 4.25, 4.46, 20.04)>]
+    [<DataTestMethod>]
+    member this.``calculatePrice, when given tax rate and universal discount and upc discount and percentage cap, calculates correct price`` 
+        (taxRate: int) (unDiscountRate: int) (upcDiscountRate: int) (upc: int) (cap: int) (taxAmount: double) (discountAmount: double) (expectedFinalPrice: double) =
+    
+        let price = 
+            definePrice
+            |> withTax taxRate
+            |> withDiscountsAfterTax (AdditiveDiscounts [
+                UniversalDiscount {Rate = unDiscountRate}
+                UPCDiscount {Rate = upcDiscountRate; UPC = upc}])
+            |> withDisountCap (Percentage cap)
             |> calculatePriceForProduct product
         Assert.AreEqual(decimal taxAmount, price.TaxAmount)
         Assert.AreEqual(decimal discountAmount, price.DiscountAmount)

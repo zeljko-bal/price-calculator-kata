@@ -33,7 +33,8 @@ type PriceReportGeneratorTests () =
         let price = 
             definePrice
             |> withTax 20
-            |> withDiscountsAfterTax [UniversalDiscount {Rate = 15}]
+            |> withDiscountsAfterTax (AdditiveDiscounts 
+                [UniversalDiscount {Rate = 15}])
             |> calculatePriceForProduct product
         let report = generatePriceReport price
         Assert.AreEqual("Tax amount = $4.05" + Environment.NewLine + 
@@ -46,9 +47,9 @@ type PriceReportGeneratorTests () =
         let price = 
             definePrice
             |> withTax 21
-            |> withDiscountsAfterTax [
+            |> withDiscountsAfterTax (AdditiveDiscounts [
                 UniversalDiscount {Rate = 15} 
-                UPCDiscount {Rate = 7; UPC = 12345} ]
+                UPCDiscount {Rate = 7; UPC = 12345} ])
             |> withExpenses [
                 PercentageExpense {Name = "Packaging"; Percentage = 1}
                 AbsoluteExpense {Name = "Transport"; Amount = 2.2m} ]

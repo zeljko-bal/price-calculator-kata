@@ -37,15 +37,26 @@ module PriceCalculation =
         | _ -> 0m
         |> roundTo2decimals
 
-    let private calculateDiscountAmount discount product basePrice = 
+    let rec private calculateDiscountAmount discount product basePrice = 
         match discount with
         | UniversalDiscount discount -> calculateUniversalDiscountAmount discount basePrice
         | UPCDiscount discount -> calculateUPCDiscountAmount discount product basePrice
-    
-    let private calculateDiscountsAmount discounts product basePrice = 
+        | AdditiveDiscounts discounts -> calculateAdditiveDiscountsAmount discounts product basePrice
+        | MultiplicativeDiscounts discounts -> calculateMultiplicativeDiscountsAmount discounts product basePrice
+        | NoDiscount -> 0m
+
+    and private calculateAdditiveDiscountsAmount discounts product basePrice = 
         discounts
         |> Seq.map (fun discount -> calculateDiscountAmount discount product basePrice)
         |> Seq.sum
+        |> roundTo2decimals
+
+    and private calculateMultiplicativeDiscountsAmount discounts product basePrice = 
+        let combineMultiplicativeDiscounts currentDiscountAmount discount =
+            currentDiscountAmount + calculateDiscountAmount discount product (basePrice - currentDiscountAmount)
+
+        discounts
+        |> Seq.fold combineMultiplicativeDiscounts 0m
         |> roundTo2decimals
 
     let calculateExpenseAmount expense product = 
@@ -71,20 +82,29 @@ module PriceCalculation =
         |> Seq.sumBy (fun expense -> expense.Amount)
         |> roundTo2decimals
 
+    let applyDiscountCap cap product discountAmount = 
+        let cappedAmount = 
+            match cap with
+            | Percentage percentage -> calculatePercentage percentage product.Price
+            | Absolute amount -> amount
+            | Unbound -> discountAmount
+        min cappedAmount discountAmount
+
     let calculatePrice priceDefinition product = 
-        let discountAmountBeforeTax = calculateDiscountsAmount priceDefinition.Discounts.BeforeTax product product.Price
+        let discountAmountBeforeTax = calculateDiscountAmount priceDefinition.Discounts.BeforeTax product product.Price
         let priceAmountBeforeTax = product.Price - discountAmountBeforeTax
         let taxAmount = calculateTaxAmount priceDefinition.TaxRate priceAmountBeforeTax
-        let discountAmountAfterTax = calculateDiscountsAmount priceDefinition.Discounts.AfterTax product priceAmountBeforeTax
+        let discountAmountAfterTax = calculateDiscountAmount priceDefinition.Discounts.AfterTax product priceAmountBeforeTax
         let discountAmount = discountAmountBeforeTax + discountAmountAfterTax
+        let cappedDiscountAmount = applyDiscountCap priceDefinition.Discounts.Cap product discountAmount
         let calculatedExpenses = calculateExpenses priceDefinition.Expenses product
         let expensesAmount = calculateExpensesAmount calculatedExpenses
-        let finalAmount = product.Price + taxAmount - discountAmount + expensesAmount
+        let finalAmount = product.Price + taxAmount - cappedDiscountAmount + expensesAmount
 
         {
             BaseAmount = product.Price
             TaxAmount = taxAmount
-            DiscountAmount = discountAmount
+            DiscountAmount = cappedDiscountAmount
             Expenses = calculatedExpenses
             FinalAmount = finalAmount
         }
