@@ -17,33 +17,35 @@ module PriceCalculation =
         FinalAmount : Money
     }
 
+    let zeroOfSameCurrency (money: Money) = money.ZeroOfSameCurrency
+
     let private calculatePercentage (percentage: int) (wholeAmount: Money) = 
         wholeAmount * decimal percentage / 100m
         
     let private roundTo (decimals: int) (value: Money) = 
         value.round decimals
 
-    let private calculateTaxAmount precision rate basePrice = 
-        calculatePercentage rate basePrice
-        |> roundTo precision
+    let private calculateTaxAmount precision rate = 
+        calculatePercentage rate 
+        >> roundTo precision
 
-    let private calculateUniversalDiscountAmount (precision: int) (discount: UniversalDiscount) (basePrice: Money) = 
-        calculatePercentage discount.Rate basePrice
-        |> roundTo precision
+    let private calculateUniversalDiscountAmount (precision: int) (discount: UniversalDiscount) = 
+        calculatePercentage discount.Rate
+        >> roundTo precision
 
-    let private calculateUPCDiscountAmount (precision: int) (discount: UPCDiscount) (product: Product) (basePrice: Money) = 
+    let private calculateUPCDiscountAmount (precision: int) (discount: UPCDiscount) ({UPC = productUpc}: Product) = 
         match discount.UPC with
-        | upc when upc = product.UPC -> calculatePercentage discount.Rate basePrice
-        | _ -> basePrice.ZeroOfSameCurrency
-        |> roundTo precision
+        | discountUpc when discountUpc = productUpc -> calculatePercentage discount.Rate
+        | _ -> zeroOfSameCurrency
+        >> roundTo precision
 
-    let rec private calculateDiscountAmount precision discount product basePrice = 
+    let rec private calculateDiscountAmount precision discount product = 
         match discount with
-        | UniversalDiscount discount -> calculateUniversalDiscountAmount precision discount basePrice
-        | UPCDiscount discount -> calculateUPCDiscountAmount precision discount product basePrice
-        | AdditiveDiscounts discounts -> calculateAdditiveDiscountsAmount precision discounts product basePrice
-        | MultiplicativeDiscounts discounts -> calculateMultiplicativeDiscountsAmount precision discounts product basePrice
-        | NoDiscount -> basePrice.ZeroOfSameCurrency
+        | UniversalDiscount discount -> calculateUniversalDiscountAmount precision discount
+        | UPCDiscount discount -> calculateUPCDiscountAmount precision discount product
+        | AdditiveDiscounts discounts -> calculateAdditiveDiscountsAmount precision discounts product
+        | MultiplicativeDiscounts discounts -> calculateMultiplicativeDiscountsAmount precision discounts product
+        | NoDiscount -> zeroOfSameCurrency
 
     and private calculateAdditiveDiscountsAmount precision discounts product basePrice = 
         let combineAdditiveDiscounts currentDiscountAmount discount =
@@ -61,32 +63,32 @@ module PriceCalculation =
         |> Seq.fold combineMultiplicativeDiscounts basePrice.ZeroOfSameCurrency
         |> roundTo precision
 
-    let calculateExpenseAmount precision expense product = 
+    let private calculateExpenseAmount precision expense product = 
         match expense with
         | PercentageExpense expense -> calculatePercentage expense.Percentage product.Price
         | AbsoluteExpense expense -> expense.Amount
         |> roundTo precision
 
-    let extractExpenseName expense = 
+    let private extractExpenseName expense = 
         match expense with
         | PercentageExpense expense -> expense.Name
         | AbsoluteExpense expense -> expense.Name
 
-    let calculateExpenses (precision: int) (expenses: Expense seq) product = 
+    let private calculateExpenses precision expenses product = 
         expenses
         |> Seq.map (fun expense -> { 
             Name = extractExpenseName expense
             Amount = calculateExpenseAmount precision expense product
         })
 
-    let calculateExpensesAmount (precision: int) (calculatedExpenses: CalculatedExpense seq) = 
+    let private calculateExpensesAmount precision calculatedExpenses = 
         if Seq.isEmpty calculatedExpenses then None
         else Some (calculatedExpenses
             |> Seq.map (fun expense -> expense.Amount)
             |> Seq.reduce (+)
             |> roundTo precision)
 
-    let applyDiscountCap cap product discountAmount = 
+    let private applyDiscountCap cap product discountAmount = 
         let cappedAmount = 
             match cap with
             | Percentage percentage -> calculatePercentage percentage product.Price

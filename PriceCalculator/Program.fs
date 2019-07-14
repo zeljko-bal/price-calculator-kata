@@ -9,7 +9,7 @@ module Main =
 
     let test = 
         let product = { 
-            Name = "The Little Prince"
+            Name = "The Hitchhiker's Guide to the Galaxy"
             UPC = 12345
             Price = Money.Of 20.25m "$"
         }
