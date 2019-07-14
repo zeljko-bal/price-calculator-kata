@@ -150,7 +150,6 @@ type PriceCalculatorTests () =
 
     [<TestMethod>]
     member this.``calculatePrice, when given price definition in different currency than the product, throws`` () =
-    
         let calculate1 = 
             definePrice
             |> withDiscountsAfterTax (

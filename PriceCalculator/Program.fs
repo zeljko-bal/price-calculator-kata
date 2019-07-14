@@ -16,17 +16,38 @@ module Main =
         
         let price = 
             definePrice
-            |> withDiscountsBeforeTax (AdditiveDiscounts 
-                [UPCDiscount {Rate = 7; UPC = 12345}])
+            |> withDiscountsBeforeTax (UPCDiscount {Rate = 7; UPC = 12345})
             |> withTax 20
-            |> withDiscountsAfterTax (AdditiveDiscounts 
-                [UniversalDiscount {Rate = 15}])
+            |> withDiscountsAfterTax (UniversalDiscount {Rate = 15})
             |> calculatePriceForProduct product
 
-        PriceReportGenerator.generatePriceReport 2 price |> printf "%s"
+        let jsonPrice = 
+            Configuration.fromJson """
+                {
+                    "Discounts": {
+                        "BeforeTax": {
+                            "Type": "UPCDiscount",
+                            "Rate": 7,
+                            "UPC": 12345
+                        },
+                        "AfterTax": {
+                            "Type": "UniversalDiscount",
+                            "Rate": 15
+                        }
+                    },
+                    "TaxRate": 20
+                }
+            """
+            |> calculatePriceForProduct product
+        
+        printfn "Report:"
+        PriceReportGenerator.generatePriceReport 2 price |> printfn "%s"
+        printfn "------------"
+        printfn "Json Report:"
+        PriceReportGenerator.generatePriceReport 2 jsonPrice |> printfn "%s"
 
     [<EntryPoint>]
-    let main argv = 
-        test
+    let main _ = 
+        test |> ignore
         Console.ReadKey() |> ignore
         0

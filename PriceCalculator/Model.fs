@@ -2,8 +2,6 @@
 
 module Model = 
 
-    //let private 
-
     [<CustomComparison>]
     [<CustomEquality>]
     type Money = private { 
