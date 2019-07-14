@@ -1,5 +1,12 @@
 # Price Calculator Kata
 
+## Disclaimer
+
+This is my attempt at learning F#, so don't take this code as an example of a good/idiomatic F#. Also, any comments or suggestions from more experienced F# developers are welcome.
+You can find the original readme text below or fork the original repository from https://github.com/zoran-horvat/price-calculator-kata .
+
+-- Željko Bal
+
 ## Invitation
 You are invited to implement imaginary customer’s requirements listed below, using programming language of choice and applying any coding practices you wish.
 
